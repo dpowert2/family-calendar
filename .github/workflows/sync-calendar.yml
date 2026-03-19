@@ -1,0 +1,41 @@
+name: Sync Outlook Calendar
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch ICS calendar feed
+        run: |
+          curl -sSfL \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            -o calendar.ics \
+            "${{ secrets.ICS_FEED_URL }}"
+          echo "Downloaded ICS file:"
+          wc -l calendar.ics
+          head -5 calendar.ics
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add calendar.ics
+          if git diff --staged --quiet; then
+            echo "No changes to calendar.ics"
+          else
+            git commit -m "chore: sync Outlook calendar"
+            git push
+          fi
