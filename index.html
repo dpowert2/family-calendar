@@ -320,13 +320,11 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  cursor: pointer;
   transition: all var(--transition);
   border: 2px solid transparent;
   position: relative;
 }
 .day-cell:hover { border-color: var(--accent-light); box-shadow: var(--shadow-sm); }
-.day-cell:active { transform: scale(0.98); }
 .day-cell.other-month {
   background: transparent;
   opacity: 0.35;
@@ -373,9 +371,109 @@ input:focus, select:focus, textarea:focus {
 }
 .event-more {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--accent);
   font-weight: 600;
   padding-top: 1px;
+  cursor: pointer;
+}
+.event-more:hover { text-decoration: underline; }
+
+/* ---------- Upcoming Sidebar ---------- */
+.app-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.calendar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.upcoming-sidebar {
+  width: 320px;
+  min-width: 320px;
+  background: var(--surface);
+  border-left: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.upcoming-header {
+  padding: 16px 20px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.upcoming-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.upcoming-list::-webkit-scrollbar { width: 5px; }
+.upcoming-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.upcoming-date-header {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 12px 20px 6px;
+}
+.upcoming-date-header.today-header {
+  color: var(--today-border);
+}
+.upcoming-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 20px;
+  transition: background var(--transition);
+}
+.upcoming-item:hover { background: var(--surface-hover); }
+.upcoming-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.upcoming-item-content {
+  flex: 1;
+  min-width: 0;
+}
+.upcoming-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upcoming-item-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+.upcoming-item-creator {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.upcoming-empty {
+  padding: 24px 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .upcoming-sidebar { width: 260px; min-width: 260px; }
+}
+@media (max-width: 900px) {
+  .upcoming-sidebar { display: none; }
 }
 
 /* ---------- Week View ---------- */
@@ -785,8 +883,16 @@ input:focus, select:focus, textarea:focus {
     </div>
   </header>
 
-  <!-- CALENDAR BODY -->
-  <div class="calendar-body" id="calendarBody"></div>
+  <!-- MAIN LAYOUT: calendar + sidebar -->
+  <div class="app-layout">
+    <div class="calendar-wrapper">
+      <div class="calendar-body" id="calendarBody"></div>
+    </div>
+    <div class="upcoming-sidebar">
+      <div class="upcoming-header">Upcoming</div>
+      <div class="upcoming-list" id="upcomingList"></div>
+    </div>
+  </div>
 </div>
 
 <!-- FLOATING ADD EVENT BUTTON -->
@@ -1234,6 +1340,7 @@ function render() {
     renderWeek(body);
   }
   updateMonthLabel();
+  renderUpcoming();
 }
 
 function updateMonthLabel() {
@@ -1273,8 +1380,7 @@ function renderMonth(container) {
     const dayStr = dateStr(d);
     const evts = getEventsForDay(d);
 
-    html += `<div class="day-cell${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}"
-              onclick="onDayClick('${dayStr}')" data-date="${dayStr}">`;
+    html += `<div class="day-cell${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}" data-date="${dayStr}">`;
     html += `<div class="day-number">${d.getDate()}</div>`;
     html += '<div class="day-events">';
 
@@ -1288,11 +1394,11 @@ function renderMonth(container) {
         const t = formatTime(new Date(e.start_time));
         const who = e.created_by ? ' · ' + esc(e.created_by) : '';
         html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
-                  onclick="event.stopPropagation();editEvent('${e.id}')">${t} ${esc(e.title)}${who}</div>`;
+                  onclick="editEvent('${e.id}')">${t} ${esc(e.title)}${who}</div>`;
       }
     }
     if (evts.length > maxShow) {
-      html += `<div class="event-more">+${evts.length - maxShow} more</div>`;
+      html += `<div class="event-more" onclick="showDayView('${dayStr}')">+${evts.length - maxShow} more</div>`;
     }
     html += '</div></div>';
   }
@@ -1632,6 +1738,93 @@ function toast(msg) {
   t.textContent = msg;
   container.appendChild(t);
   setTimeout(() => { t.remove(); }, 3000);
+}
+
+/* ================================================================
+   SHOW DAY VIEW (from "+N more")
+   ================================================================ */
+function showDayView(dayStr) {
+  state.currentDate = new Date(dayStr + 'T12:00:00');
+  setView('week');
+}
+
+/* ================================================================
+   UPCOMING SIDEBAR
+   ================================================================ */
+function renderUpcoming() {
+  const list = document.getElementById('upcomingList');
+  if (!list) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const endRange = new Date(today);
+  endRange.setDate(endRange.getDate() + 14);
+
+  const allEvents = [];
+
+  for (const e of state.familyEvents) {
+    const s = new Date(e.start_time);
+    if (s >= today && s < endRange) {
+      allEvents.push({ title: e.title, start: s, end: new Date(e.end_time), color: e.color || '#4A90D9', creator: e.created_by, isBusy: false, id: e.id });
+    }
+  }
+
+  for (const e of state.workEvents) {
+    if (e.start >= today && e.start < endRange) {
+      allEvents.push({ title: 'Busy', start: e.start, end: e.end, color: null, isBusy: true });
+    }
+  }
+
+  allEvents.sort((a, b) => a.start - b.start);
+
+  if (allEvents.length === 0) {
+    list.innerHTML = '<div class="upcoming-empty">No upcoming events in the next 2 weeks</div>';
+    return;
+  }
+
+  let html = '';
+  let lastDateStr = '';
+  const nowDate = new Date();
+  nowDate.setHours(0, 0, 0, 0);
+
+  for (const e of allEvents) {
+    const dStr = dateStr(e.start);
+    if (dStr !== lastDateStr) {
+      const d = new Date(e.start);
+      d.setHours(0, 0, 0, 0);
+      const isToday = sameDay(d, nowDate);
+      const isTomorrow = sameDay(d, new Date(nowDate.getTime() + 86400000));
+      let label;
+      if (isToday) label = 'Today';
+      else if (isTomorrow) label = 'Tomorrow';
+      else label = d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+      html += `<div class="upcoming-date-header${isToday ? ' today-header' : ''}">${label}</div>`;
+      lastDateStr = dStr;
+    }
+
+    const timeStr = formatTime(e.start) + ' – ' + formatTime(e.end);
+
+    if (e.isBusy) {
+      html += `<div class="upcoming-item">
+        <div class="upcoming-color-dot" style="background:var(--busy)"></div>
+        <div class="upcoming-item-content">
+          <div class="upcoming-item-title" style="color:var(--busy);font-style:italic">Busy</div>
+          <div class="upcoming-item-time">${timeStr}</div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="upcoming-item" style="cursor:pointer" onclick="editEvent('${e.id}')">
+        <div class="upcoming-color-dot" style="background:${e.color}"></div>
+        <div class="upcoming-item-content">
+          <div class="upcoming-item-title">${esc(e.title)}</div>
+          <div class="upcoming-item-time">${timeStr}</div>
+          ${e.creator ? `<div class="upcoming-item-creator">${esc(e.creator)}</div>` : ''}
+        </div>
+      </div>`;
+    }
+  }
+
+  list.innerHTML = html;
 }
 
 /* ================================================================
