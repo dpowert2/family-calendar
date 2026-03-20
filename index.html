@@ -881,9 +881,14 @@ const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
 let sb = null;
 let currentUser = null;
 
-// Initialize Supabase client
-if (SUPABASE_URL !== '__SUPABASE_URL__' && SUPABASE_ANON_KEY !== '__SUPABASE_ANON_KEY__') {
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function initSupabase() {
+  try {
+    if (SUPABASE_URL !== '__SUPABASE_URL__' && SUPABASE_ANON_KEY !== '__SUPABASE_ANON_KEY__' && window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) {
+    console.error('Failed to initialize Supabase:', e);
+  }
 }
 
 /* ================================================================
@@ -912,6 +917,7 @@ let refreshTimer = null;
    INIT
    ================================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
+  initSupabase();
   if (!sb) {
     toast('Supabase not configured. Check placeholders.');
     return;
