@@ -1757,18 +1757,25 @@ function renderWeek(container) {
   container.innerHTML = html;
 
   const grid = document.getElementById('weekGrid');
-  const gridRect = grid.getBoundingClientRect();
 
-  for (const d of days) {
+  // Create per-day event overlay containers positioned via CSS grid
+  for (let di = 0; di < 7; di++) {
+    const d = days[di];
     const evts = getEventsForDay(d).filter(e => !isAllDayEvent(e));
     if (evts.length === 0) continue;
 
-    // Get cell rect for this day column
-    const refCell = grid.querySelector(`.week-col-cell[data-date="${dateStr(d)}"][data-hour="6"]`);
-    if (!refCell) continue;
-    const cellRect = refCell.getBoundingClientRect();
-    const colLeft = cellRect.left - gridRect.left;
-    const colWidth = cellRect.width;
+    // Create overlay container that spans this day's column across all hour rows
+    const overlay = document.createElement('div');
+    overlay.className = 'week-day-overlay';
+    overlay.style.gridColumn = String(di + 2); // +2 because col 1 is time labels
+    overlay.style.gridRow = '3 / -1'; // row 3 to end (after header + all-day rows)
+    overlay.style.position = 'relative';
+    overlay.style.pointerEvents = 'none';
+    grid.appendChild(overlay);
+
+    const totalHours = 17; // 6 AM to 11 PM
+    const cellHeight = 60; // matches CSS .week-col-cell height
+    const totalHeight = totalHours * cellHeight;
 
     // Build layout items
     const items = [];
@@ -1782,7 +1789,7 @@ function renderWeek(container) {
     }
     items.sort((a, b) => a.startH - b.startH || (b.endH - b.startH) - (a.endH - a.startH));
 
-    // Group into overlapping clusters — only events that actually collide share columns
+    // Group into overlapping clusters
     const clusters = [];
     for (const item of items) {
       let added = false;
@@ -1824,20 +1831,20 @@ function renderWeek(container) {
       }
     }
 
-    // Render
+    // Render events inside overlay using percentage positioning
     for (const item of items) {
       const { e, start, end, startH, endH } = item;
-      const height = Math.max(15, (endH - startH) * 60);
       const numCols = item.numCols || 1;
+      const col = item.col || 0;
 
-      const hourCell = grid.querySelector(`.week-col-cell[data-date="${dateStr(d)}"][data-hour="${Math.floor(startH)}"]`);
-      if (!hourCell) continue;
-      const hCellRect = hourCell.getBoundingClientRect();
-      const cellTop = hCellRect.top - gridRect.top + grid.scrollTop;
-      const minuteOffset = (startH - Math.floor(startH)) * 60;
+      const topPx = (startH - 6) * cellHeight;
+      const heightPx = Math.max(15, (endH - startH) * cellHeight);
+      const leftPct = (col / numCols) * 100;
+      const widthPct = (1 / numCols) * 100;
 
       const div = document.createElement('div');
       div.className = 'week-event' + (e.isBusy ? ' busy' : '');
+      div.style.pointerEvents = 'auto';
       if (!e.isBusy) {
         div.style.background = e.color || '#4A90D9';
         const who = e.created_by ? ' · ' + e.created_by : '';
@@ -1848,38 +1855,30 @@ function renderWeek(container) {
         div.textContent = formatTime(start) + '–' + formatTime(end) + ' ' + ownerLabel;
       }
 
-      const slotWidth = (colWidth - 6) / numCols;
       div.style.position = 'absolute';
-      div.style.top = (cellTop + minuteOffset) + 'px';
-      div.style.height = height + 'px';
-      div.style.left = (colLeft + 3 + (item.col || 0) * slotWidth) + 'px';
-      div.style.width = (slotWidth - 2) + 'px';
-      grid.appendChild(div);
+      div.style.top = topPx + 'px';
+      div.style.height = heightPx + 'px';
+      div.style.left = `calc(${leftPct}% + 2px)`;
+      div.style.width = `calc(${widthPct}% - 4px)`;
+      overlay.appendChild(div);
     }
   }
 
-  // Now line
+  // Now line — use grid-based positioning
   if (days.some(d => sameDay(d, today))) {
     const now = new Date();
     const h = now.getHours() + now.getMinutes() / 60;
     if (h >= 6 && h <= 23) {
-      const cell = grid.querySelector(`.week-col-cell.today-col[data-hour="${Math.floor(h)}"]`);
-      if (cell) {
-        const gridRect = grid.getBoundingClientRect();
-        const cellRect = cell.getBoundingClientRect();
-        const top = cellRect.top - gridRect.top + grid.scrollTop + (h - Math.floor(h)) * 60;
-        const line = document.createElement('div');
-        line.className = 'now-line';
-        line.style.position = 'absolute';
-        line.style.top = top + 'px';
-        const firstColCell = grid.querySelector('.week-col-cell[data-hour="6"]');
-        if (firstColCell) {
-          const firstRect = firstColCell.getBoundingClientRect();
-          line.style.left = (firstRect.left - gridRect.left) + 'px';
-          line.style.right = '0';
-        }
-        grid.appendChild(line);
-      }
+      const line = document.createElement('div');
+      line.className = 'now-line';
+      line.style.position = 'absolute';
+      line.style.gridColumn = '2 / -1';
+      line.style.gridRow = '3 / -1';
+      line.style.top = ((h - 6) * 60) + 'px';
+      line.style.left = '0';
+      line.style.right = '0';
+      line.style.pointerEvents = 'none';
+      grid.appendChild(line);
     }
   }
 
