@@ -1000,7 +1000,7 @@ async function sendMagicLink() {
   msgEl.style.display = 'block';
 
   try {
-    const { error } = await sb.auth.signInWithOtp({ email });
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
     if (error) throw error;
     msgEl.textContent = 'Check your email for a login link!';
     document.getElementById('loginEmail').value = '';
