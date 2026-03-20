@@ -1770,7 +1770,7 @@ function renderWeek(container) {
     const colLeft = cellRect.left - gridRect.left;
     const colWidth = cellRect.width;
 
-    // Build layout items with collision detection
+    // Build layout items
     const items = [];
     for (const e of evts) {
       const start = e.isBusy ? e.start : new Date(e.start_time);
@@ -1780,31 +1780,55 @@ function renderWeek(container) {
       if (endH <= 6 || startH >= 23) continue;
       items.push({ e, start, end, startH: Math.max(startH, 6), endH: Math.min(endH, 23) });
     }
+    items.sort((a, b) => a.startH - b.startH || (b.endH - b.startH) - (a.endH - a.startH));
 
-    // Assign columns for overlapping events
-    const columns = [];
+    // Group into overlapping clusters — only events that actually collide share columns
+    const clusters = [];
     for (const item of items) {
-      let placed = false;
-      for (let c = 0; c < columns.length; c++) {
-        const lastInCol = columns[c][columns[c].length - 1];
-        if (item.startH >= lastInCol.endH - 0.01) {
-          columns[c].push(item);
-          item.col = c;
-          placed = true;
+      let added = false;
+      for (const cluster of clusters) {
+        if (item.startH < cluster.endH - 0.01) {
+          cluster.items.push(item);
+          cluster.endH = Math.max(cluster.endH, item.endH);
+          added = true;
           break;
         }
       }
-      if (!placed) {
-        item.col = columns.length;
-        columns.push([item]);
+      if (!added) {
+        clusters.push({ items: [item], endH: item.endH });
       }
     }
-    const numCols = columns.length;
+
+    // Within each cluster, assign columns
+    for (const cluster of clusters) {
+      const cols = [];
+      for (const item of cluster.items) {
+        let placed = false;
+        for (let c = 0; c < cols.length; c++) {
+          const lastInCol = cols[c][cols[c].length - 1];
+          if (item.startH >= lastInCol.endH - 0.01) {
+            cols[c].push(item);
+            item.col = c;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          item.col = cols.length;
+          cols.push([item]);
+        }
+      }
+      const numCols = cols.length;
+      for (const item of cluster.items) {
+        item.numCols = numCols;
+      }
+    }
 
     // Render
     for (const item of items) {
       const { e, start, end, startH, endH } = item;
       const height = Math.max(15, (endH - startH) * 60);
+      const numCols = item.numCols || 1;
 
       const hourCell = grid.querySelector(`.week-col-cell[data-date="${dateStr(d)}"][data-hour="${Math.floor(startH)}"]`);
       if (!hourCell) continue;
@@ -1828,7 +1852,7 @@ function renderWeek(container) {
       div.style.position = 'absolute';
       div.style.top = (cellTop + minuteOffset) + 'px';
       div.style.height = height + 'px';
-      div.style.left = (colLeft + 3 + item.col * slotWidth) + 'px';
+      div.style.left = (colLeft + 3 + (item.col || 0) * slotWidth) + 'px';
       div.style.width = (slotWidth - 2) + 'px';
       grid.appendChild(div);
     }
