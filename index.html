@@ -83,7 +83,7 @@ input:focus, select:focus, textarea:focus {
    LOGIN SCREEN
    ============================================================ */
 #loginScreen {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   height: 100vh;
@@ -918,34 +918,10 @@ let refreshTimer = null;
    ================================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
-  if (!sb) {
-    toast('Supabase not configured. Check placeholders.');
-    return;
-  }
 
-  // Check auth state
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    showApp();
-    initApp();
-  } else {
-    showLogin();
-  }
-
-  // Listen for auth changes
-  const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
-    if (session) {
-      currentUser = session.user;
-      showApp();
-      if (!document.getElementById('app').classList.contains('visible')) {
-        initApp();
-      }
-    } else {
-      currentUser = null;
-      showLogin();
-    }
-  });
+  // Skip auth — go straight to calendar
+  showApp();
+  initApp();
 });
 
 function showLogin() {
@@ -1033,10 +1009,9 @@ async function signInWithPassword() {
 }
 
 async function signOut() {
-  await sb.auth.signOut();
+  if (sb) await sb.auth.signOut();
   currentUser = null;
   closeSettings();
-  showLogin();
 }
 
 function updateUserAvatar() {
