@@ -967,17 +967,14 @@ input:focus, select:focus, textarea:focus {
 
   .fab { bottom: 80px; right: 16px; width: 52px; height: 52px; font-size: 26px; }
 
-  .month-grid { gap: 2px; }
-  .day-cell { padding: 3px 4px; border-radius: 6px; }
-  .day-number { font-size: 12px; margin-bottom: 1px; }
-  .event-chip { font-size: 8px; padding: 1px 3px; border-radius: 2px; }
-  .event-more { font-size: 8px; }
+  .month-grid { gap: 1px; }
+  .event-chip { display: none; }
+  .event-more { display: none; }
 
-  .week-grid { grid-template-columns: 40px repeat(7, 1fr); }
   .time-label { font-size: 9px; padding: 0 4px; }
-  .week-header-cell { font-size: 10px; padding: 6px 2px; }
-  .week-header-cell .day-num { font-size: 14px; }
-  .week-event { font-size: 9px; padding: 1px 3px; }
+  .week-header-cell { font-size: 11px; padding: 6px 2px; }
+  .week-header-cell .day-num { font-size: 16px; }
+  .week-event { font-size: 10px; padding: 2px 4px; }
 
   .modal { border-radius: var(--radius); }
   .modal-body { padding: 8px 16px 16px; }
@@ -993,6 +990,125 @@ input:focus, select:focus, textarea:focus {
   .nav-btn { padding: 6px 10px; font-size: 13px; min-width: 38px; }
   .view-toggle button { padding: 5px 10px; font-size: 12px; }
 }
+
+/* ============================================================
+   MOBILE MONTH VIEW — DOT INDICATORS + DAY DETAIL
+   ============================================================ */
+@media (max-width: 768px) {
+  .month-grid {
+    grid-template-rows: repeat(auto-fill, 1fr);
+    gap: 1px;
+  }
+  .day-cell {
+    padding: 6px 2px 4px;
+    min-height: 44px;
+    align-items: center;
+    cursor: pointer;
+  }
+  .day-cell.selected {
+    background: var(--accent-light);
+    border-color: var(--accent);
+  }
+  .day-number {
+    font-size: 14px;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .day-cell.today .day-number {
+    background: var(--today-border);
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    margin: 0 auto 4px;
+  }
+  .day-events { display: none; }
+  .day-dots {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+  .day-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: block;
+  }
+}
+
+/* Day dots hidden on desktop */
+@media (min-width: 769px) {
+  .day-dots { display: none; }
+  .day-cell.selected { border-color: var(--accent); }
+}
+
+/* Mobile day detail panel */
+.mobile-day-detail {
+  padding: 12px 16px 80px;
+  background: var(--bg);
+}
+.mobile-day-detail-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 8px;
+}
+.mobile-day-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 16px 0;
+  text-align: center;
+}
+.mobile-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mobile-day-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.mobile-day-item:active { background: var(--surface-hover); }
+.mobile-day-item-color {
+  width: 4px;
+  min-height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.mobile-day-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.mobile-day-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mobile-day-item-time {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.mobile-day-item.busy .mobile-day-item-title {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 </style>
 </head>
 <body>
@@ -1268,6 +1384,7 @@ let state = {
   refreshMin: 5,
   filterDavid: true,
   filterRoselle: true,
+  mobileSelectedDay: null,
 };
 
 let refreshTimer = null;
@@ -1343,6 +1460,12 @@ function initApp() {
   render();
   refreshData();
   scheduleRefresh();
+  // Re-render on resize to switch between mobile/desktop layouts
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(render, 200);
+  });
   // Set default creator from localStorage
   const lastCreator = localStorage.getItem('fc_creator');
   if (lastCreator && FAMILY_MEMBERS.includes(lastCreator)) {
@@ -1589,7 +1712,8 @@ function navigateMonth(dir) {
     state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() + dir, 1);
   } else {
     const d = new Date(state.currentDate);
-    d.setDate(d.getDate() + dir * 7);
+    const step = isMobileView() ? 3 : 7;
+    d.setDate(d.getDate() + dir * step);
     state.currentDate = d;
   }
   render();
@@ -1627,12 +1751,25 @@ function updateMonthLabel() {
     document.getElementById('monthLabel').textContent =
       d.toLocaleDateString([], { month: 'long', year: 'numeric' });
   } else {
-    const start = getWeekStart(d);
-    const end = new Date(start); end.setDate(end.getDate() + 6);
+    const mobile = isMobileView();
+    let start, end;
+    if (mobile) {
+      start = new Date(d);
+      start.setDate(start.getDate() - 1);
+      end = new Date(d);
+      end.setDate(end.getDate() + 1);
+    } else {
+      start = getWeekStart(d);
+      end = new Date(start); end.setDate(end.getDate() + 6);
+    }
     const fmt = { month: 'short', day: 'numeric' };
     document.getElementById('monthLabel').textContent =
       start.toLocaleDateString([], fmt) + ' — ' + end.toLocaleDateString([], { ...fmt, year: 'numeric' });
   }
+}
+
+function isMobileView() {
+  return window.innerWidth <= 768;
 }
 
 function renderMonth(container) {
@@ -1643,56 +1780,139 @@ function renderMonth(container) {
   const startOffset = (firstDay.getDay() + 6) % 7;
   const startDate = new Date(firstDay);
   startDate.setDate(startDate.getDate() - startOffset);
+  const mobile = isMobileView();
 
   let html = '<div class="weekday-row">';
-  for (const d of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']) {
+  const dayLabels = mobile ? ['M','T','W','T','F','S','S'] : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  for (const d of dayLabels) {
     html += `<div class="weekday-cell">${d}</div>`;
   }
   html += '</div><div class="month-grid">';
 
-  for (let i = 0; i < 42; i++) {
+  // Determine number of rows needed
+  const lastDay = new Date(year, month + 1, 0);
+  const lastOffset = (lastDay.getDay() + 6) % 7;
+  const totalDays = startOffset + lastDay.getDate();
+  const numRows = Math.ceil(totalDays / 7);
+  const totalCells = numRows * 7;
+
+  for (let i = 0; i < totalCells; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
     const isOther = d.getMonth() !== month;
     const isToday = sameDay(d, today);
     const dayStr = dateStr(d);
     const evts = getEventsForDay(d);
+    const isSelected = state.mobileSelectedDay === dayStr;
 
-    html += `<div class="day-cell${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}" data-date="${dayStr}">`;
+    html += `<div class="day-cell${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}" data-date="${dayStr}" onclick="onDayCellClick('${dayStr}')">`;
     html += `<div class="day-number">${d.getDate()}</div>`;
-    html += '<div class="day-events">';
 
-    const maxShow = 3;
-    for (let j = 0; j < Math.min(evts.length, maxShow); j++) {
-      const e = evts[j];
-      const allDay = isAllDayEvent(e);
-      if (e.isBusy) {
-        const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
-        if (allDay) {
-          html += `<div class="event-chip busy">${ownerLabel} Busy</div>`;
+    if (mobile) {
+      // Mobile: show colored dots only
+      html += '<div class="day-dots">';
+      const dots = [];
+      for (const e of evts) {
+        if (e.isBusy) {
+          const c = e.owner === 'roselle' ? '#E91E63' : '#90A4AE';
+          if (!dots.includes(c)) dots.push(c);
         } else {
-          const t = formatTime(e.start) + '–' + formatTime(e.end);
-          html += `<div class="event-chip busy">${t} ${ownerLabel} Busy</div>`;
+          const c = e.color || '#4A90D9';
+          if (!dots.includes(c)) dots.push(c);
         }
-      } else {
-        const who = e.created_by ? ' · ' + esc(e.created_by) : '';
-        if (allDay) {
-          html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
-                    onclick="editEvent('${e.id}')">${esc(e.title)}${who}</div>`;
+        if (dots.length >= 4) break;
+      }
+      for (const c of dots) {
+        html += `<span class="day-dot" style="background:${c}"></span>`;
+      }
+      html += '</div>';
+    } else {
+      // Desktop: show event chips
+      html += '<div class="day-events">';
+      const maxShow = 3;
+      for (let j = 0; j < Math.min(evts.length, maxShow); j++) {
+        const e = evts[j];
+        const allDay = isAllDayEvent(e);
+        if (e.isBusy) {
+          const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
+          if (allDay) {
+            html += `<div class="event-chip busy">${ownerLabel} Busy</div>`;
+          } else {
+            const t = formatTime(e.start) + '–' + formatTime(e.end);
+            html += `<div class="event-chip busy">${t} ${ownerLabel} Busy</div>`;
+          }
         } else {
-          const t = formatTime(new Date(e.start_time));
-          html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
-                    onclick="editEvent('${e.id}')">${t} ${esc(e.title)}${who}</div>`;
+          const who = e.created_by ? ' · ' + esc(e.created_by) : '';
+          if (allDay) {
+            html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
+                      onclick="event.stopPropagation();editEvent('${e._originalId || e.id}')">${esc(e.title)}${who}</div>`;
+          } else {
+            const t = formatTime(new Date(e.start_time));
+            html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
+                      onclick="event.stopPropagation();editEvent('${e._originalId || e.id}')">${t} ${esc(e.title)}${who}</div>`;
+          }
         }
       }
+      if (evts.length > maxShow) {
+        html += `<div class="event-more" onclick="event.stopPropagation();showDayView('${dayStr}')">+${evts.length - maxShow} more</div>`;
+      }
+      html += '</div>';
     }
-    if (evts.length > maxShow) {
-      html += `<div class="event-more" onclick="showDayView('${dayStr}')">+${evts.length - maxShow} more</div>`;
-    }
-    html += '</div></div>';
+    html += '</div>';
   }
   html += '</div>';
+
+  // Mobile: day detail panel below calendar
+  if (mobile) {
+    const selDay = state.mobileSelectedDay || dateStr(today);
+    const selDate = new Date(selDay + 'T12:00:00');
+    const dayEvts = getEventsForDay(selDate);
+    const dayLabel = selDate.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+
+    html += `<div class="mobile-day-detail">`;
+    html += `<div class="mobile-day-detail-header">${dayLabel}</div>`;
+
+    if (dayEvts.length === 0) {
+      html += '<div class="mobile-day-empty">No events</div>';
+    } else {
+      html += '<div class="mobile-day-list">';
+      for (const e of dayEvts) {
+        const allDay = isAllDayEvent(e);
+        if (e.isBusy) {
+          const ownerLabel = e.owner === 'roselle' ? 'Roselle' : 'David';
+          const timeStr = allDay ? 'All day' : formatTime(e.start) + ' – ' + formatTime(e.end);
+          html += `<div class="mobile-day-item busy">
+            <div class="mobile-day-item-color" style="background:${e.owner === 'roselle' ? '#E91E63' : '#90A4AE'}"></div>
+            <div class="mobile-day-item-info">
+              <div class="mobile-day-item-title">${ownerLabel} Busy</div>
+              <div class="mobile-day-item-time">${timeStr}</div>
+            </div></div>`;
+        } else {
+          const timeStr = allDay ? 'All day' : formatTime(new Date(e.start_time)) + ' – ' + formatTime(new Date(e.end_time));
+          const who = e.created_by || '';
+          html += `<div class="mobile-day-item" onclick="editEvent('${e._originalId || e.id}')">
+            <div class="mobile-day-item-color" style="background:${e.color || '#4A90D9'}"></div>
+            <div class="mobile-day-item-info">
+              <div class="mobile-day-item-title">${esc(e.title)}</div>
+              <div class="mobile-day-item-time">${timeStr}${who ? ' · ' + esc(who) : ''}</div>
+            </div></div>`;
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
   container.innerHTML = html;
+}
+
+function onDayCellClick(dayStr) {
+  if (isMobileView()) {
+    state.mobileSelectedDay = dayStr;
+    render();
+  } else {
+    showDayView(dayStr);
+  }
 }
 
 /* ================================================================
@@ -1700,19 +1920,30 @@ function renderMonth(container) {
    ================================================================ */
 function renderWeek(container) {
   const today = new Date();
-  const weekStart = getWeekStart(state.currentDate);
+  const mobile = isMobileView();
+  const numDays = mobile ? 3 : 7;
+
+  let startDate;
+  if (mobile) {
+    // On mobile, show 3 days centered on currentDate (yesterday, today, tomorrow)
+    startDate = new Date(state.currentDate);
+    startDate.setDate(startDate.getDate() - 1);
+  } else {
+    startDate = getWeekStart(state.currentDate);
+  }
+
   const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
+  for (let i = 0; i < numDays; i++) {
+    const d = new Date(startDate);
     d.setDate(d.getDate() + i);
     days.push(d);
   }
 
-  let html = '<div class="week-grid" id="weekGrid">';
+  let html = `<div class="week-grid${mobile ? ' mobile-week' : ''}" id="weekGrid" style="grid-template-columns: ${mobile ? '36px' : '50px'} repeat(${numDays}, 1fr);">`;
   html += '<div class="week-header-spacer"></div>';
   for (const d of days) {
     const isToday = sameDay(d, today);
-    const dayName = d.toLocaleDateString([], { weekday: 'short' });
+    const dayName = d.toLocaleDateString([], { weekday: mobile ? 'short' : 'short' });
     html += `<div class="week-header-cell${isToday ? ' today-col' : ''}">
       ${dayName}<span class="day-num">${d.getDate()}</span></div>`;
   }
@@ -1745,7 +1976,7 @@ function renderWeek(container) {
   for (let h = 6; h <= 22; h++) {
     const label = h === 0 ? '12 AM' : h < 12 ? h + ' AM' : h === 12 ? '12 PM' : (h - 12) + ' PM';
     html += `<div class="time-label">${label}</div>`;
-    for (let di = 0; di < 7; di++) {
+    for (let di = 0; di < numDays; di++) {
       const d = days[di];
       const isToday = sameDay(d, today);
       const dStr = dateStr(d);
@@ -1759,7 +1990,7 @@ function renderWeek(container) {
   const grid = document.getElementById('weekGrid');
 
   // Create per-day event overlay containers positioned via CSS grid
-  for (let di = 0; di < 7; di++) {
+  for (let di = 0; di < numDays; di++) {
     const d = days[di];
     const evts = getEventsForDay(d).filter(e => !isAllDayEvent(e));
     if (evts.length === 0) continue;
