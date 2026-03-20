@@ -41,6 +41,8 @@
   --touch-min: 44px;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --transition: 0.2s ease;
+  --david-color: #4A90D9;
+  --roselle-color: #E84393;
 }
 
 html, body {
@@ -80,10 +82,10 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ============================================================
-   LOGIN SCREEN
+   PIN SCREEN
    ============================================================ */
-#loginScreen {
-  display: none;
+#pinScreen {
+  display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
@@ -91,69 +93,99 @@ input:focus, select:focus, textarea:focus {
   background: var(--bg);
 }
 
-.login-card {
+.pin-card {
   background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: 48px 40px;
-  width: min(440px, 90vw);
+  padding: 40px 36px;
+  width: min(340px, 90vw);
   text-align: center;
 }
 
-.login-title {
-  font-size: 32px;
+.pin-title {
+  font-size: 28px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.login-subtitle {
-  font-size: 15px;
+.pin-subtitle {
+  font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 32px;
-}
-
-.login-tabs {
-  display: flex;
-  background: var(--bg);
-  border-radius: var(--radius-sm);
-  padding: 3px;
-  gap: 2px;
   margin-bottom: 24px;
 }
 
-.login-tabs button {
-  flex: 1;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
   transition: all var(--transition);
 }
 
-.login-tabs button.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow-sm);
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.login-form { text-align: left; }
-.login-form .form-group { margin-bottom: 16px; }
+.pin-dot.error {
+  background: var(--danger);
+  border-color: var(--danger);
+  animation: pinShake 0.4s;
+}
 
-.login-message {
-  padding: 16px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-light);
-  color: var(--accent-dark);
-  font-size: 14px;
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.numpad-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  font-size: 28px;
   font-weight: 500;
-  margin-top: 16px;
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: all var(--transition);
+  background: var(--bg);
+  color: var(--text);
 }
 
-.login-error {
-  background: var(--danger-light);
+.numpad-btn:hover { background: var(--border-light); }
+.numpad-btn:active { transform: scale(0.92); background: var(--border); }
+
+.numpad-btn.empty { visibility: hidden; }
+
+.numpad-btn.backspace {
+  font-size: 20px;
+  background: transparent;
+}
+
+.pin-error-msg {
   color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 16px;
+  min-height: 20px;
 }
 
 /* ============================================================
@@ -175,12 +207,14 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   z-index: 10;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .header-left {
   display: flex;
@@ -188,13 +222,14 @@ input:focus, select:focus, textarea:focus {
   gap: 16px;
 }
 .header-title {
-  font-size: 22px;
+  font-size: clamp(16px, 2.5vw, 22px);
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 .header-date {
-  font-size: 15px;
+  font-size: clamp(12px, 1.5vw, 15px);
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -204,6 +239,12 @@ input:focus, select:focus, textarea:focus {
   gap: 8px;
 }
 
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .nav-btn {
   display: flex;
   align-items: center;
@@ -211,9 +252,9 @@ input:focus, select:focus, textarea:focus {
   min-width: var(--touch-min);
   min-height: var(--touch-min);
   border-radius: var(--radius-sm);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: 8px 14px;
   transition: all var(--transition);
 }
 .nav-btn:hover { background: var(--surface-hover); }
@@ -225,15 +266,16 @@ input:focus, select:focus, textarea:focus {
 .nav-btn.primary:hover { background: var(--accent-dark); }
 
 .nav-arrow {
-  font-size: 20px;
-  padding: 8px 12px;
-  min-width: var(--touch-min);
+  font-size: 18px;
+  padding: 8px 10px;
+  min-width: 38px;
 }
 .month-label {
-  font-size: 20px;
+  font-size: clamp(14px, 2vw, 20px);
   font-weight: 700;
-  min-width: 220px;
+  min-width: 0;
   text-align: center;
+  white-space: nowrap;
 }
 
 .view-toggle {
@@ -244,9 +286,9 @@ input:focus, select:focus, textarea:focus {
   gap: 2px;
 }
 .view-toggle button {
-  padding: 8px 18px;
+  padding: 6px 14px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   transition: all var(--transition);
@@ -257,13 +299,48 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--shadow-sm);
 }
 
+/* ---------- Filter Checkboxes ---------- */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.filter-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+.filter-check .filter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .clock {
-  font-size: 28px;
+  font-size: clamp(18px, 3vw, 28px);
   font-weight: 300;
   color: var(--text);
   letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
-  min-width: 90px;
+  min-width: 70px;
   text-align: right;
 }
 
@@ -280,43 +357,56 @@ input:focus, select:focus, textarea:focus {
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition);
+  flex-shrink: 0;
 }
 .user-avatar:hover { background: var(--accent-dark); }
 
 /* ---------- Calendar Grid ---------- */
+.app-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.calendar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
 .calendar-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px 8px;
+  padding: 8px clamp(6px, 1.5vw, 16px) 6px;
   overflow: hidden;
 }
 .weekday-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 3px;
+  margin-bottom: 3px;
 }
 .weekday-cell {
   text-align: center;
-  font-size: 12px;
+  font-size: clamp(10px, 1.2vw, 12px);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: var(--text-muted);
-  padding: 4px 0;
+  padding: 3px 0;
 }
 .month-grid {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(6, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 .day-cell {
   background: var(--surface);
   border-radius: var(--radius-sm);
-  padding: 6px 8px;
+  padding: clamp(3px, 0.5vw, 6px) clamp(4px, 0.7vw, 8px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -335,9 +425,9 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 1px var(--today-border);
 }
 .day-number {
-  font-size: 15px;
+  font-size: clamp(11px, 1.5vw, 15px);
   font-weight: 700;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   color: var(--text);
 }
 .day-cell.today .day-number {
@@ -348,13 +438,13 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 .event-chip {
-  font-size: 11px;
+  font-size: clamp(9px, 1vw, 11px);
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -370,7 +460,7 @@ input:focus, select:focus, textarea:focus {
   font-weight: 500;
 }
 .event-more {
-  font-size: 10px;
+  font-size: clamp(9px, 0.9vw, 10px);
   color: var(--accent);
   font-weight: 600;
   padding-top: 1px;
@@ -379,21 +469,9 @@ input:focus, select:focus, textarea:focus {
 .event-more:hover { text-decoration: underline; }
 
 /* ---------- Upcoming Sidebar ---------- */
-.app-layout {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-.calendar-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
 .upcoming-sidebar {
-  width: 320px;
-  min-width: 320px;
+  width: clamp(260px, 25vw, 340px);
+  min-width: 260px;
   background: var(--surface);
   border-left: 1px solid var(--border-light);
   display: flex;
@@ -401,8 +479,8 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
 }
 .upcoming-header {
-  padding: 16px 20px 12px;
-  font-size: 16px;
+  padding: 14px 18px 10px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
   border-bottom: 1px solid var(--border-light);
@@ -411,17 +489,17 @@ input:focus, select:focus, textarea:focus {
 .upcoming-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 .upcoming-list::-webkit-scrollbar { width: 5px; }
 .upcoming-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .upcoming-date-header {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-muted);
-  padding: 12px 20px 6px;
+  padding: 10px 18px 4px;
 }
 .upcoming-date-header.today-header {
   color: var(--today-border);
@@ -430,7 +508,7 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 20px;
+  padding: 7px 18px;
   transition: background var(--transition);
 }
 .upcoming-item:hover { background: var(--surface-hover); }
@@ -463,24 +541,17 @@ input:focus, select:focus, textarea:focus {
   color: var(--text-muted);
 }
 .upcoming-empty {
-  padding: 24px 20px;
+  padding: 24px 18px;
   font-size: 13px;
   color: var(--text-muted);
   text-align: center;
-}
-
-@media (max-width: 1100px) {
-  .upcoming-sidebar { width: 260px; min-width: 260px; }
-}
-@media (max-width: 900px) {
-  .upcoming-sidebar { display: none; }
 }
 
 /* ---------- Week View ---------- */
 .week-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-columns: 50px repeat(7, 1fr);
   overflow-y: auto;
   background: var(--surface);
   border-radius: var(--radius);
@@ -497,29 +568,25 @@ input:focus, select:focus, textarea:focus {
   position: sticky; top: 0; z-index: 2;
   background: var(--surface);
   text-align: center;
-  padding: 10px 4px;
-  font-size: 13px;
+  padding: 8px 2px;
+  font-size: 12px;
   font-weight: 700;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-secondary);
 }
-.week-header-cell.today-col {
-  color: var(--today-border);
-}
+.week-header-cell.today-col { color: var(--today-border); }
 .week-header-cell .day-num {
   display: block;
-  font-size: 22px;
+  font-size: clamp(16px, 2vw, 22px);
   font-weight: 700;
   color: var(--text);
 }
-.week-header-cell.today-col .day-num {
-  color: var(--today-border);
-}
+.week-header-cell.today-col .day-num { color: var(--today-border); }
 .time-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   text-align: right;
-  padding: 0 8px;
+  padding: 0 6px;
   border-right: 1px solid var(--border-light);
   height: 60px;
   display: flex;
@@ -541,8 +608,8 @@ input:focus, select:focus, textarea:focus {
   position: absolute;
   left: 2px; right: 2px;
   border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
+  padding: 2px 5px;
+  font-size: 10px;
   font-weight: 600;
   color: #fff;
   overflow: hidden;
@@ -586,6 +653,7 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.2s;
+  padding: 16px;
 }
 .modal-overlay.open { display: flex; }
 
@@ -596,7 +664,7 @@ input:focus, select:focus, textarea:focus {
   background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  width: min(500px, 90vw);
+  width: min(500px, 100%);
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.25s;
@@ -605,10 +673,10 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 12px;
+  padding: 18px 20px 10px;
 }
 .modal-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 .modal-close {
@@ -623,31 +691,31 @@ input:focus, select:focus, textarea:focus {
 }
 .modal-close:hover { background: var(--bg); color: var(--text); }
 
-.modal-body { padding: 8px 24px 24px; }
+.modal-body { padding: 8px 20px 20px; }
 
-.form-group { margin-bottom: 16px; }
+.form-group { margin-bottom: 14px; }
 .form-label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .color-picker {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 .color-swatch {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   border: 3px solid transparent;
   cursor: pointer;
@@ -658,18 +726,19 @@ input:focus, select:focus, textarea:focus {
 
 .modal-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: flex-end;
   padding-top: 8px;
+  flex-wrap: wrap;
 }
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--touch-min);
-  padding: 10px 24px;
+  padding: 10px 20px;
   border-radius: var(--radius-sm);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   transition: all var(--transition);
 }
@@ -709,9 +778,7 @@ input:focus, select:focus, textarea:focus {
   overflow-y: auto;
   padding: 24px;
 }
-.settings-section {
-  margin-bottom: 28px;
-}
+.settings-section { margin-bottom: 28px; }
 .settings-section-title {
   font-size: 13px;
   font-weight: 700;
@@ -734,41 +801,17 @@ input:focus, select:focus, textarea:focus {
   gap: 10px;
 }
 
-.user-email {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 16px;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.status-badge.connected { background: #E8F8EE; color: var(--success); }
-.status-badge.disconnected { background: var(--danger-light); color: var(--danger); }
-.status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 /* ---------- Floating Action Button ---------- */
 .fab {
   position: fixed;
-  bottom: 32px;
-  right: 32px;
-  width: 60px;
-  height: 60px;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  font-size: 32px;
+  font-size: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -779,7 +822,7 @@ input:focus, select:focus, textarea:focus {
   border: none;
   line-height: 1;
 }
-.fab:hover { background: var(--accent-dark); transform: scale(1.08); box-shadow: 0 6px 24px rgba(74,144,217,0.5); }
+.fab:hover { background: var(--accent-dark); transform: scale(1.08); }
 .fab:active { transform: scale(0.95); }
 
 /* ---------- Toast ---------- */
@@ -807,51 +850,127 @@ input:focus, select:focus, textarea:focus {
 }
 @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 900px) {
-  .header { padding: 8px 12px; }
-  .month-label { font-size: 16px; min-width: 160px; }
-  .clock { font-size: 22px; }
-  .calendar-body { padding: 8px; }
+/* ============================================================
+   MOBILE BOTTOM NAV
+   ============================================================ */
+.mobile-bottom-nav {
+  display: none;
+  background: var(--surface);
+  border-top: 1px solid var(--border-light);
+  padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  flex-shrink: 0;
+}
+
+.mobile-bottom-nav .mobile-tabs {
+  display: flex;
+  justify-content: space-around;
+}
+
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color var(--transition);
+}
+.mobile-tab.active { color: var(--accent); }
+.mobile-tab svg { width: 22px; height: 22px; }
+
+/* ============================================================
+   RESPONSIVE — MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+  .header {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .header-left { gap: 8px; }
+  .header-date { display: none; }
+  .clock { display: none; }
+  .user-avatar { width: 32px; height: 32px; font-size: 12px; }
+
+  .upcoming-sidebar { display: none; }
+  .upcoming-sidebar.mobile-visible {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    min-width: 0;
+    z-index: 90;
+    border-left: none;
+  }
+  .upcoming-sidebar.mobile-visible .upcoming-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-bottom-nav { display: flex; }
+
+  .fab { bottom: 80px; right: 16px; width: 52px; height: 52px; font-size: 26px; }
+
+  .month-grid { gap: 2px; }
+  .day-cell { padding: 3px 4px; border-radius: 6px; }
+  .day-number { font-size: 12px; margin-bottom: 1px; }
+  .event-chip { font-size: 8px; padding: 1px 3px; border-radius: 2px; }
+  .event-more { font-size: 8px; }
+
+  .week-grid { grid-template-columns: 40px repeat(7, 1fr); }
+  .time-label { font-size: 9px; padding: 0 4px; }
+  .week-header-cell { font-size: 10px; padding: 6px 2px; }
+  .week-header-cell .day-num { font-size: 14px; }
+  .week-event { font-size: 9px; padding: 1px 3px; }
+
+  .modal { border-radius: var(--radius); }
+  .modal-body { padding: 8px 16px 16px; }
+
+  .numpad-btn { width: 64px; height: 64px; font-size: 24px; }
+  .pin-card { padding: 32px 24px; }
+}
+
+@media (max-width: 480px) {
+  .filter-bar { gap: 10px; }
+  .filter-check { font-size: 12px; }
+  .nav-arrow { min-width: 34px; padding: 6px 8px; font-size: 16px; }
+  .nav-btn { padding: 6px 10px; font-size: 13px; min-width: 38px; }
+  .view-toggle button { padding: 5px 10px; font-size: 12px; }
 }
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-title">🏠 Family Calendar</div>
-    <div class="login-subtitle">Sign in to manage your family's schedule</div>
-
-    <div class="login-tabs">
-      <button class="active" onclick="switchLoginTab('magic')">Magic Link</button>
-      <button onclick="switchLoginTab('password')">Password</button>
+<!-- PIN SCREEN -->
+<div id="pinScreen">
+  <div class="pin-card">
+    <div class="pin-title">Family Calendar</div>
+    <div class="pin-subtitle">Enter PIN to continue</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
     </div>
-
-    <!-- Magic Link Tab -->
-    <div id="magicTab" class="login-form">
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" id="loginEmail" placeholder="you@example.com">
-      </div>
-      <button class="btn btn-primary" style="width:100%" onclick="sendMagicLink()">Send Magic Link</button>
-      <div id="magicMessage" class="login-message"></div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="pinPress('1')">1</button>
+      <button class="numpad-btn" onclick="pinPress('2')">2</button>
+      <button class="numpad-btn" onclick="pinPress('3')">3</button>
+      <button class="numpad-btn" onclick="pinPress('4')">4</button>
+      <button class="numpad-btn" onclick="pinPress('5')">5</button>
+      <button class="numpad-btn" onclick="pinPress('6')">6</button>
+      <button class="numpad-btn" onclick="pinPress('7')">7</button>
+      <button class="numpad-btn" onclick="pinPress('8')">8</button>
+      <button class="numpad-btn" onclick="pinPress('9')">9</button>
+      <button class="numpad-btn empty"></button>
+      <button class="numpad-btn" onclick="pinPress('0')">0</button>
+      <button class="numpad-btn backspace" onclick="pinBackspace()">&larr;</button>
     </div>
-
-    <!-- Password Tab -->
-    <div id="passwordTab" class="login-form" style="display:none;">
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" id="loginEmailPwd" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" id="loginPassword" placeholder="••••••••">
-      </div>
-      <button class="btn btn-primary" style="width:100%" onclick="signInWithPassword()">Sign In</button>
-      <div id="passwordMessage" class="login-message"></div>
-    </div>
+    <div class="pin-error-msg" id="pinError"></div>
   </div>
 </div>
 
@@ -861,16 +980,28 @@ input:focus, select:focus, textarea:focus {
   <header class="header">
     <div class="header-left">
       <div>
-        <div class="header-title">🏠 Family Calendar</div>
+        <div class="header-title">Family Calendar</div>
         <div class="header-date" id="headerDate"></div>
+      </div>
+      <div class="filter-bar">
+        <label class="filter-check">
+          <input type="checkbox" id="filterDavid" checked onchange="onFilterChange()">
+          <span class="filter-dot" style="background:var(--david-color)"></span>
+          David
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" id="filterRoselle" checked onchange="onFilterChange()">
+          <span class="filter-dot" style="background:var(--roselle-color)"></span>
+          Roselle
+        </label>
       </div>
     </div>
 
-    <div style="display:flex; align-items:center; gap:8px;">
+    <div class="nav-controls">
       <button class="nav-btn nav-arrow" onclick="navigateMonth(-1)" title="Previous">&#x276E;</button>
       <div class="month-label" id="monthLabel"></div>
       <button class="nav-btn nav-arrow" onclick="navigateMonth(1)" title="Next">&#x276F;</button>
-      <button class="nav-btn" onclick="goToday()" style="margin-left:8px;">Today</button>
+      <button class="nav-btn" onclick="goToday()" style="margin-left:4px;">Today</button>
     </div>
 
     <div class="header-right">
@@ -879,7 +1010,7 @@ input:focus, select:focus, textarea:focus {
         <button id="btnWeek" onclick="setView('week')">Week</button>
       </div>
       <div class="clock" id="clock"></div>
-      <button class="user-avatar" id="userAvatar" onclick="openSettings()" title="User menu"></button>
+      <button class="user-avatar" id="userAvatar" onclick="openSettings()" title="Settings">S</button>
     </div>
   </header>
 
@@ -888,9 +1019,26 @@ input:focus, select:focus, textarea:focus {
     <div class="calendar-wrapper">
       <div class="calendar-body" id="calendarBody"></div>
     </div>
-    <div class="upcoming-sidebar">
-      <div class="upcoming-header">Upcoming</div>
+    <div class="upcoming-sidebar" id="upcomingSidebar">
+      <div class="upcoming-header">
+        <span>Upcoming</span>
+        <button class="modal-close" id="sidebarCloseBtn" onclick="closeMobileSidebar()" style="display:none;">&times;</button>
+      </div>
       <div class="upcoming-list" id="upcomingList"></div>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <div class="mobile-bottom-nav" id="mobileNav">
+    <div class="mobile-tabs">
+      <button class="mobile-tab active" id="mTabCal" onclick="switchMobileTab('calendar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </button>
+      <button class="mobile-tab" id="mTabUp" onclick="switchMobileTab('upcoming')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+        Upcoming
+      </button>
     </div>
   </div>
 </div>
@@ -925,8 +1073,11 @@ input:focus, select:focus, textarea:focus {
         <textarea id="eventDesc" rows="2" placeholder="Optional notes..."></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">Who's adding this?</label>
-        <input type="text" id="eventCreator" placeholder="Dave, Sarah...">
+        <label class="form-label">Who</label>
+        <select id="eventCreator">
+          <option value="David">David</option>
+          <option value="Roselle">Roselle</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Color</label>
@@ -949,10 +1100,6 @@ input:focus, select:focus, textarea:focus {
   </div>
   <div class="settings-body">
     <div class="settings-section">
-      <div class="user-email" id="userEmailDisplay"></div>
-      <button class="btn btn-ghost" style="width:100%; margin-bottom:16px;" onclick="signOut()">Sign Out</button>
-    </div>
-    <div class="settings-section">
       <div class="settings-section-title">Display</div>
       <div class="form-group">
         <label class="form-label">Refresh interval (minutes)</label>
@@ -960,12 +1107,20 @@ input:focus, select:focus, textarea:focus {
       </div>
     </div>
     <div class="settings-section">
-      <div class="settings-section-title">Work Calendar (ICS)</div>
+      <div class="settings-section-title">David's Work Calendar (ICS)</div>
       <div class="form-group">
         <label class="form-label">Cached ICS path</label>
         <input type="text" id="settIcsPath" placeholder="calendar.ics" value="calendar.ics">
       </div>
-      <div class="settings-note">The GitHub Action caches your Outlook ICS feed to this file in the repo.</div>
+      <div class="settings-note">The GitHub Action caches the Outlook ICS feed to this file.</div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Roselle's Work Calendar (ICS)</div>
+      <div class="form-group">
+        <label class="form-label">Cached ICS path</label>
+        <input type="text" id="settIcsPathRoselle" placeholder="calendar-roselle.ics" value="calendar-roselle.ics">
+      </div>
+      <div class="settings-note">Add a second ICS sync for Roselle's calendar when ready.</div>
     </div>
   </div>
   <div class="settings-footer">
@@ -979,13 +1134,18 @@ input:focus, select:focus, textarea:focus {
 
 <script>
 /* ================================================================
+   CONSTANTS
+   ================================================================ */
+const PIN_CODE = '990627';
+const FAMILY_MEMBERS = ['David', 'Roselle'];
+
+/* ================================================================
    SUPABASE CONFIGURATION
    ================================================================ */
 const SUPABASE_URL = '__SUPABASE_URL__';
 const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
 
 let sb = null;
-let currentUser = null;
 
 function initSupabase() {
   try {
@@ -1010,124 +1170,104 @@ let state = {
   view: 'month',
   currentDate: new Date(),
   familyEvents: [],
-  workEvents: [],
+  workEventsDavid: [],
+  workEventsRoselle: [],
   editingEvent: null,
   selectedColor: EVENT_COLORS[0],
   icsPath: 'calendar.ics',
+  icsPathRoselle: 'calendar-roselle.ics',
   refreshMin: 5,
+  filterDavid: true,
+  filterRoselle: true,
 };
 
 let refreshTimer = null;
 
 /* ================================================================
+   PIN GATE
+   ================================================================ */
+let pinEntry = '';
+
+function pinPress(digit) {
+  if (pinEntry.length >= 6) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 6) {
+    setTimeout(checkPin, 150);
+  }
+}
+
+function pinBackspace() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach(d => d.classList.remove('error'));
+}
+
+function updatePinDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('filled', i < pinEntry.length);
+  });
+}
+
+function checkPin() {
+  if (pinEntry === PIN_CODE) {
+    localStorage.setItem('fc_authed', 'yes');
+    enterApp();
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN';
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach(d => { d.classList.remove('filled'); d.classList.add('error'); });
+    setTimeout(() => {
+      dots.forEach(d => d.classList.remove('error'));
+      pinEntry = '';
+      updatePinDots();
+      document.getElementById('pinError').textContent = '';
+    }, 800);
+  }
+}
+
+function enterApp() {
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('fabAdd').style.display = '';
+  initSupabase();
+  initApp();
+}
+
+/* ================================================================
    INIT
    ================================================================ */
-document.addEventListener('DOMContentLoaded', async () => {
-  initSupabase();
-
-  // Skip auth — go straight to calendar
-  showApp();
-  initApp();
+document.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('fc_authed') === 'yes') {
+    enterApp();
+  }
 });
-
-function showLogin() {
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('app').classList.remove('visible');
-}
-
-function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-}
 
 function initApp() {
   loadSettings();
   renderColorPicker();
   updateClock();
-  updateUserAvatar();
   setInterval(updateClock, 1000);
   render();
   refreshData();
   scheduleRefresh();
+  // Set default creator from localStorage
+  const lastCreator = localStorage.getItem('fc_creator');
+  if (lastCreator && FAMILY_MEMBERS.includes(lastCreator)) {
+    document.getElementById('eventCreator').value = lastCreator;
+  }
 }
 
 /* ================================================================
-   LOGIN / AUTH
+   FILTER
    ================================================================ */
-function switchLoginTab(tab) {
-  const magic = document.getElementById('magicTab');
-  const password = document.getElementById('passwordTab');
-  const buttons = document.querySelectorAll('.login-tabs button');
-
-  if (tab === 'magic') {
-    magic.style.display = 'block';
-    password.style.display = 'none';
-    buttons[0].classList.add('active');
-    buttons[1].classList.remove('active');
-  } else {
-    magic.style.display = 'none';
-    password.style.display = 'block';
-    buttons[0].classList.remove('active');
-    buttons[1].classList.add('active');
-  }
-}
-
-async function sendMagicLink() {
-  const email = document.getElementById('loginEmail').value.trim();
-  if (!email) { toast('Please enter your email'); return; }
-
-  const msgEl = document.getElementById('magicMessage');
-  msgEl.textContent = 'Sending...';
-  msgEl.classList.remove('login-error');
-  msgEl.style.display = 'block';
-
-  try {
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
-    if (error) throw error;
-    msgEl.textContent = 'Check your email for a login link!';
-    document.getElementById('loginEmail').value = '';
-  } catch (e) {
-    msgEl.textContent = 'Error: ' + (e.message || 'Unable to send link');
-    msgEl.classList.add('login-error');
-  }
-}
-
-async function signInWithPassword() {
-  const email = document.getElementById('loginEmailPwd').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  if (!email || !password) { toast('Please enter email and password'); return; }
-
-  const msgEl = document.getElementById('passwordMessage');
-  msgEl.textContent = 'Signing in...';
-  msgEl.classList.remove('login-error');
-  msgEl.style.display = 'block';
-
-  try {
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    document.getElementById('loginEmailPwd').value = '';
-    document.getElementById('loginPassword').value = '';
-  } catch (e) {
-    msgEl.textContent = 'Error: ' + (e.message || 'Unable to sign in');
-    msgEl.classList.add('login-error');
-  }
-}
-
-async function signOut() {
-  if (sb) await sb.auth.signOut();
-  currentUser = null;
-  closeSettings();
-}
-
-function updateUserAvatar() {
-  if (!currentUser) return;
-  const avatar = document.getElementById('userAvatar');
-  const initial = (currentUser.email || 'U')[0].toUpperCase();
-  avatar.textContent = initial;
-
-  const emailDisplay = document.getElementById('userEmailDisplay');
-  emailDisplay.textContent = currentUser.email;
+function onFilterChange() {
+  state.filterDavid = document.getElementById('filterDavid').checked;
+  state.filterRoselle = document.getElementById('filterRoselle').checked;
+  render();
 }
 
 /* ================================================================
@@ -1139,19 +1279,20 @@ function loadSettings() {
     try {
       const p = JSON.parse(s);
       state.icsPath = p.icsPath || 'calendar.ics';
+      state.icsPathRoselle = p.icsPathRoselle || 'calendar-roselle.ics';
       state.refreshMin = p.refreshMin || 5;
     } catch(e) {}
   }
-  const creator = localStorage.getItem('fc_creator');
-  if (creator) document.getElementById('eventCreator').value = creator;
 }
 
 function saveSettings() {
   state.icsPath = document.getElementById('settIcsPath').value.trim() || 'calendar.ics';
+  state.icsPathRoselle = document.getElementById('settIcsPathRoselle').value.trim() || 'calendar-roselle.ics';
   state.refreshMin = parseInt(document.getElementById('settRefresh').value) || 5;
 
   localStorage.setItem('fc_settings', JSON.stringify({
     icsPath: state.icsPath,
+    icsPathRoselle: state.icsPathRoselle,
     refreshMin: state.refreshMin,
   }));
 
@@ -1163,6 +1304,7 @@ function saveSettings() {
 
 function openSettings() {
   document.getElementById('settIcsPath').value = state.icsPath;
+  document.getElementById('settIcsPathRoselle').value = state.icsPathRoselle;
   document.getElementById('settRefresh').value = state.refreshMin;
   document.getElementById('settingsPanel').classList.add('open');
 }
@@ -1175,7 +1317,11 @@ function closeSettings() {
    DATA FETCHING
    ================================================================ */
 async function refreshData() {
-  await Promise.all([fetchFamilyEvents(), fetchWorkCalendar()]);
+  await Promise.all([
+    fetchFamilyEvents(),
+    fetchWorkCalendar('david'),
+    fetchWorkCalendar('roselle'),
+  ]);
   render();
 }
 
@@ -1192,7 +1338,6 @@ async function fetchFamilyEvents() {
       .from('events')
       .select('*')
       .order('start_time', { ascending: true });
-
     if (error) throw error;
     state.familyEvents = data || [];
   } catch(e) {
@@ -1202,7 +1347,6 @@ async function fetchFamilyEvents() {
 
 async function supabaseUpsert(evt) {
   if (!sb) { toast('Supabase not configured'); return null; }
-
   const isNew = !evt.id;
   const body = {
     title: evt.title,
@@ -1212,7 +1356,6 @@ async function supabaseUpsert(evt) {
     description: evt.description || '',
     created_by: evt.created_by || '',
   };
-
   try {
     let result;
     if (isNew) {
@@ -1220,11 +1363,7 @@ async function supabaseUpsert(evt) {
       if (error) throw error;
       result = data[0];
     } else {
-      const { data, error } = await sb
-        .from('events')
-        .update(body)
-        .eq('id', evt.id)
-        .select();
+      const { data, error } = await sb.from('events').update(body).eq('id', evt.id).select();
       if (error) throw error;
       result = data[0];
     }
@@ -1247,19 +1386,25 @@ async function supabaseDelete(id) {
   }
 }
 
-/* ----- ICS Work Calendar ----- */
-async function fetchWorkCalendar() {
+/* ----- ICS Work Calendars ----- */
+async function fetchWorkCalendar(who) {
+  const path = who === 'roselle' ? state.icsPathRoselle : state.icsPath;
   try {
-    const res = await fetch(state.icsPath + '?t=' + Date.now());
+    const res = await fetch(path + '?t=' + Date.now());
     if (!res.ok) return;
     const text = await res.text();
-    state.workEvents = parseICS(text);
+    const events = parseICS(text, who);
+    if (who === 'roselle') {
+      state.workEventsRoselle = events;
+    } else {
+      state.workEventsDavid = events;
+    }
   } catch(e) {
-    console.warn('ICS fetch failed:', e);
+    // silently fail — file may not exist yet
   }
 }
 
-function parseICS(text) {
+function parseICS(text, owner) {
   const events = [];
   const lines = text.replace(/\r\n /g, '').replace(/\r/g, '\n').split('\n');
   let evt = null;
@@ -1267,7 +1412,7 @@ function parseICS(text) {
     if (line === 'BEGIN:VEVENT') { evt = {}; continue; }
     if (line === 'END:VEVENT' && evt) {
       if (evt.start && evt.end) {
-        events.push({ title: 'Busy', start: evt.start, end: evt.end, isBusy: true });
+        events.push({ title: 'Busy', start: evt.start, end: evt.end, isBusy: true, owner: owner || 'david' });
       }
       evt = null;
       continue;
@@ -1299,8 +1444,10 @@ function parseICSDate(line) {
    ================================================================ */
 function updateClock() {
   const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  document.getElementById('headerDate').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const clockEl = document.getElementById('clock');
+  if (clockEl) clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateEl = document.getElementById('headerDate');
+  if (dateEl) dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 /* ================================================================
@@ -1388,8 +1535,9 @@ function renderMonth(container) {
     for (let j = 0; j < Math.min(evts.length, maxShow); j++) {
       const e = evts[j];
       if (e.isBusy) {
+        const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
         const t = formatTime(e.start) + '–' + formatTime(e.end);
-        html += `<div class="event-chip busy">${t} Busy</div>`;
+        html += `<div class="event-chip busy">${t} ${ownerLabel} Busy</div>`;
       } else {
         const t = formatTime(new Date(e.start_time));
         const who = e.created_by ? ' · ' + esc(e.created_by) : '';
@@ -1451,7 +1599,6 @@ function renderWeek(container) {
       const startH = start.getHours() + start.getMinutes() / 60;
       const endH = end.getHours() + end.getMinutes() / 60;
       if (endH <= 6 || startH >= 23) continue;
-      const top = Math.max(0, (startH - 6)) * 60;
       const height = Math.max(15, (Math.min(endH, 23) - Math.max(startH, 6)) * 60);
 
       const hourCell = grid.querySelector(`.week-col-cell[data-date="${dateStr(d)}"][data-hour="${Math.max(6, Math.floor(startH))}"]`);
@@ -1465,7 +1612,8 @@ function renderWeek(container) {
         div.textContent = formatTime(start) + ' ' + e.title + who;
         div.onclick = () => editEvent(e.id);
       } else {
-        div.textContent = formatTime(start) + '–' + formatTime(end) + ' Busy';
+        const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
+        div.textContent = formatTime(start) + '–' + formatTime(end) + ' ' + ownerLabel + ' Busy';
       }
 
       const gridRect = grid.getBoundingClientRect();
@@ -1482,6 +1630,7 @@ function renderWeek(container) {
     }
   }
 
+  // Now line
   if (days.some(d => sameDay(d, today))) {
     const now = new Date();
     const h = now.getHours() + now.getMinutes() / 60;
@@ -1520,20 +1669,34 @@ function getEventsForDay(d) {
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
 
-  const family = state.familyEvents.filter(e => {
+  let family = state.familyEvents.filter(e => {
     const s = new Date(e.start_time);
     const en = new Date(e.end_time);
     return s < dayEnd && en > dayStart;
   });
 
-  const work = state.workEvents.filter(e => {
-    return e.start < dayEnd && e.end > dayStart;
+  // Apply filter to family events
+  family = family.filter(e => {
+    const creator = (e.created_by || '').toLowerCase();
+    if (creator === 'david' && !state.filterDavid) return false;
+    if (creator === 'roselle' && !state.filterRoselle) return false;
+    return true;
   });
 
-  return [...family, ...work].sort((a, b) => {
+  let workD = [];
+  if (state.filterDavid) {
+    workD = state.workEventsDavid.filter(e => e.start < dayEnd && e.end > dayStart);
+  }
+
+  let workR = [];
+  if (state.filterRoselle) {
+    workR = state.workEventsRoselle.filter(e => e.start < dayEnd && e.end > dayStart);
+  }
+
+  return [...family, ...workD, ...workR].sort((a, b) => {
     const sa = a.isBusy ? a.start : new Date(a.start_time);
-    const sb = b.isBusy ? b.start : new Date(b.start_time);
-    return sa - sb;
+    const sbb = b.isBusy ? b.start : new Date(b.start_time);
+    return sa - sbb;
   });
 }
 
@@ -1567,73 +1730,41 @@ function esc(s) {
 /* ================================================================
    EVENT MODAL
    ================================================================ */
-function onDayClick(dayStr) {
+function openNewEventModal(dayStr, hour) {
   state.editingEvent = null;
   document.getElementById('modalTitle').textContent = 'New Event';
   document.getElementById('btnDelete').style.display = 'none';
   document.getElementById('btnSave').textContent = 'Save Event';
 
+  const hStr = hour !== undefined ? String(hour).padStart(2, '0') : '09';
+  const endH = hour !== undefined ? String(Math.min(hour + 1, 23)).padStart(2, '0') : '10';
+  const min = hour !== undefined ? '00' : '00';
+
   document.getElementById('eventTitle').value = '';
-  document.getElementById('eventStart').value = dayStr + 'T09:00';
-  document.getElementById('eventEnd').value = dayStr + 'T10:00';
+  document.getElementById('eventStart').value = dayStr + 'T' + hStr + ':' + min;
+  document.getElementById('eventEnd').value = dayStr + 'T' + endH + ':' + min;
   document.getElementById('eventDesc').value = '';
   state.selectedColor = EVENT_COLORS[0];
   renderColorPicker();
 
-  const creator = localStorage.getItem('fc_creator');
-  if (creator) document.getElementById('eventCreator').value = creator;
+  const lastCreator = localStorage.getItem('fc_creator');
+  if (lastCreator && FAMILY_MEMBERS.includes(lastCreator)) {
+    document.getElementById('eventCreator').value = lastCreator;
+  }
 
   document.getElementById('eventModal').classList.add('open');
   setTimeout(() => document.getElementById('eventTitle').focus(), 100);
 }
 
 function onWeekCellClick(dayStr, hour) {
-  state.editingEvent = null;
-  document.getElementById('modalTitle').textContent = 'New Event';
-  document.getElementById('btnDelete').style.display = 'none';
-  document.getElementById('btnSave').textContent = 'Save Event';
-
-  const hStr = String(hour).padStart(2, '0');
-  document.getElementById('eventTitle').value = '';
-  document.getElementById('eventStart').value = dayStr + 'T' + hStr + ':00';
-  document.getElementById('eventEnd').value = dayStr + 'T' + String(hour + 1).padStart(2, '0') + ':00';
-  document.getElementById('eventDesc').value = '';
-  state.selectedColor = EVENT_COLORS[0];
-  renderColorPicker();
-
-  const creator = localStorage.getItem('fc_creator');
-  if (creator) document.getElementById('eventCreator').value = creator;
-
-  document.getElementById('eventModal').classList.add('open');
-  setTimeout(() => document.getElementById('eventTitle').focus(), 100);
+  openNewEventModal(dayStr, hour);
 }
 
 function onFabClick() {
   const today = new Date();
   const dayStr = dateStr(today);
-  const now = new Date();
-  const hour = now.getHours();
-  const nextHour = Math.min(hour + 1, 23);
-  const hStr = String(hour).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-
-  state.editingEvent = null;
-  document.getElementById('modalTitle').textContent = 'New Event';
-  document.getElementById('btnDelete').style.display = 'none';
-  document.getElementById('btnSave').textContent = 'Save Event';
-
-  document.getElementById('eventTitle').value = '';
-  document.getElementById('eventStart').value = dayStr + 'T' + hStr + ':' + min;
-  document.getElementById('eventEnd').value = dayStr + 'T' + String(nextHour).padStart(2, '0') + ':' + min;
-  document.getElementById('eventDesc').value = '';
-  state.selectedColor = EVENT_COLORS[0];
-  renderColorPicker();
-
-  const creator = localStorage.getItem('fc_creator');
-  if (creator) document.getElementById('eventCreator').value = creator;
-
-  document.getElementById('eventModal').classList.add('open');
-  setTimeout(() => document.getElementById('eventTitle').focus(), 100);
+  const hour = today.getHours();
+  openNewEventModal(dayStr, hour);
 }
 
 function editEvent(id) {
@@ -1649,7 +1780,7 @@ function editEvent(id) {
   document.getElementById('eventStart').value = toLocalInput(new Date(evt.start_time));
   document.getElementById('eventEnd').value = toLocalInput(new Date(evt.end_time));
   document.getElementById('eventDesc').value = evt.description || '';
-  document.getElementById('eventCreator').value = evt.created_by || '';
+  document.getElementById('eventCreator').value = evt.created_by || 'David';
   state.selectedColor = evt.color || EVENT_COLORS[0];
   renderColorPicker();
 
@@ -1666,7 +1797,7 @@ async function saveEvent() {
   const startVal = document.getElementById('eventStart').value;
   const endVal = document.getElementById('eventEnd').value;
   const desc = document.getElementById('eventDesc').value.trim();
-  const creator = document.getElementById('eventCreator').value.trim();
+  const creator = document.getElementById('eventCreator').value;
 
   if (!title) { toast('Please enter a title'); return; }
   if (!startVal || !endVal) { toast('Please set start and end times'); return; }
@@ -1680,7 +1811,7 @@ async function saveEvent() {
     end_time: new Date(endVal).toISOString(),
     color: state.selectedColor,
     description: desc,
-    created_by: creator || (currentUser?.email?.split('@')[0] || 'User'),
+    created_by: creator,
   };
 
   if (state.editingEvent) {
@@ -1717,6 +1848,7 @@ function toLocalInput(d) {
    ================================================================ */
 function renderColorPicker() {
   const el = document.getElementById('colorPicker');
+  if (!el) return;
   el.innerHTML = EVENT_COLORS.map(c =>
     `<div class="color-swatch${c === state.selectedColor ? ' selected' : ''}"
       style="background:${c}" onclick="pickColor('${c}')"></div>`
@@ -1765,13 +1897,26 @@ function renderUpcoming() {
   for (const e of state.familyEvents) {
     const s = new Date(e.start_time);
     if (s >= today && s < endRange) {
+      const creator = (e.created_by || '').toLowerCase();
+      if (creator === 'david' && !state.filterDavid) continue;
+      if (creator === 'roselle' && !state.filterRoselle) continue;
       allEvents.push({ title: e.title, start: s, end: new Date(e.end_time), color: e.color || '#4A90D9', creator: e.created_by, isBusy: false, id: e.id });
     }
   }
 
-  for (const e of state.workEvents) {
-    if (e.start >= today && e.start < endRange) {
-      allEvents.push({ title: 'Busy', start: e.start, end: e.end, color: null, isBusy: true });
+  if (state.filterDavid) {
+    for (const e of state.workEventsDavid) {
+      if (e.start >= today && e.start < endRange) {
+        allEvents.push({ title: 'D Busy', start: e.start, end: e.end, color: null, isBusy: true, owner: 'david' });
+      }
+    }
+  }
+
+  if (state.filterRoselle) {
+    for (const e of state.workEventsRoselle) {
+      if (e.start >= today && e.start < endRange) {
+        allEvents.push({ title: 'R Busy', start: e.start, end: e.end, color: null, isBusy: true, owner: 'roselle' });
+      }
     }
   }
 
@@ -1805,10 +1950,12 @@ function renderUpcoming() {
     const timeStr = formatTime(e.start) + ' – ' + formatTime(e.end);
 
     if (e.isBusy) {
+      const dotColor = e.owner === 'roselle' ? 'var(--roselle-color)' : 'var(--david-color)';
+      const ownerName = e.owner === 'roselle' ? 'Roselle' : 'David';
       html += `<div class="upcoming-item">
-        <div class="upcoming-color-dot" style="background:var(--busy)"></div>
+        <div class="upcoming-color-dot" style="background:${dotColor}"></div>
         <div class="upcoming-item-content">
-          <div class="upcoming-item-title" style="color:var(--busy);font-style:italic">Busy</div>
+          <div class="upcoming-item-title" style="color:var(--busy);font-style:italic">${ownerName} — Busy</div>
           <div class="upcoming-item-time">${timeStr}</div>
         </div>
       </div>`;
@@ -1828,6 +1975,31 @@ function renderUpcoming() {
 }
 
 /* ================================================================
+   MOBILE TAB SWITCHING
+   ================================================================ */
+function switchMobileTab(tab) {
+  const sidebar = document.getElementById('upcomingSidebar');
+  const calTab = document.getElementById('mTabCal');
+  const upTab = document.getElementById('mTabUp');
+
+  if (tab === 'upcoming') {
+    sidebar.classList.add('mobile-visible');
+    document.getElementById('sidebarCloseBtn').style.display = '';
+    calTab.classList.remove('active');
+    upTab.classList.add('active');
+  } else {
+    sidebar.classList.remove('mobile-visible');
+    document.getElementById('sidebarCloseBtn').style.display = 'none';
+    calTab.classList.add('active');
+    upTab.classList.remove('active');
+  }
+}
+
+function closeMobileSidebar() {
+  switchMobileTab('calendar');
+}
+
+/* ================================================================
    SWIPE GESTURE SUPPORT
    ================================================================ */
 let touchStartX = 0;
@@ -1843,6 +2015,7 @@ document.addEventListener('touchend', e => {
   if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2) {
     if (document.getElementById('eventModal').classList.contains('open')) return;
     if (document.getElementById('settingsPanel').classList.contains('open')) return;
+    if (document.getElementById('upcomingSidebar').classList.contains('mobile-visible')) return;
     navigateMonth(dx < 0 ? 1 : -1);
   }
 }, { passive: true });
@@ -1851,6 +2024,12 @@ document.addEventListener('touchend', e => {
    KEYBOARD NAV
    ================================================================ */
 document.addEventListener('keydown', e => {
+  // If pin screen is visible, handle numpad
+  if (document.getElementById('pinScreen').style.display !== 'none') {
+    if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+    if (e.key === 'Backspace') pinBackspace();
+    return;
+  }
   if (document.getElementById('eventModal').classList.contains('open')) {
     if (e.key === 'Escape') closeEventModal();
     return;
