@@ -608,7 +608,6 @@ input:focus, select:focus, textarea:focus {
 
 .week-event {
   position: absolute;
-  left: 2px; right: 2px;
   border-radius: 4px;
   padding: 2px 5px;
   font-size: 10px;
@@ -618,6 +617,8 @@ input:focus, select:focus, textarea:focus {
   z-index: 1;
   cursor: pointer;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .week-event.busy {
   background: var(--busy-bg);
@@ -1141,16 +1142,35 @@ input:focus, select:focus, textarea:focus {
         <label class="form-label">Description</label>
         <textarea id="eventDesc" rows="2" placeholder="Optional notes..."></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">Who</label>
-        <select id="eventCreator">
-          <option value="David">David</option>
-          <option value="Roselle">Roselle</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Repeat</label>
+          <select id="eventRecurrence" onchange="toggleRecurrenceEnd()">
+            <option value="">None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="fortnightly">Fortnightly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="form-group" id="recurrenceEndGroup" style="display:none;">
+          <label class="form-label">Repeat Until</label>
+          <input type="date" id="eventRecurrenceEnd">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Color</label>
-        <div class="color-picker" id="colorPicker"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Who</label>
+          <select id="eventCreator">
+            <option value="David">David</option>
+            <option value="Roselle">Roselle</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Color</label>
+          <div class="color-picker" id="colorPicker"></div>
+        </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-danger" id="btnDelete" style="display:none;margin-right:auto;" onclick="deleteEvent()">Delete</button>
@@ -1424,6 +1444,8 @@ async function supabaseUpsert(evt) {
     color: evt.color,
     description: evt.description || '',
     created_by: evt.created_by || '',
+    recurrence_rule: evt.recurrence_rule || null,
+    recurrence_end: evt.recurrence_end || null,
   };
   try {
     let result;
@@ -1721,8 +1743,8 @@ function renderWeek(container) {
       div.style.position = 'absolute';
       div.style.top = (cellTop + minuteOffset) + 'px';
       div.style.height = height + 'px';
-      div.style.left = cellRect.left - gridRect.left + 2 + 'px';
-      div.style.width = (cellRect.width - 4) + 'px';
+      div.style.left = (cellRect.left - gridRect.left + 4) + 'px';
+      div.style.width = (cellRect.width - 8) + 'px';
       grid.appendChild(div);
     }
   }
@@ -1761,12 +1783,67 @@ function renderWeek(container) {
 /* ================================================================
    EVENT HELPERS
    ================================================================ */
+/* Expand recurring events into virtual occurrences for a date range */
+function expandRecurringEvents(events, rangeStart, rangeEnd) {
+  const result = [];
+  for (const e of events) {
+    const s = new Date(e.start_time);
+    const en = new Date(e.end_time);
+    const duration = en - s;
+
+    if (!e.recurrence_rule) {
+      // Non-recurring: include if overlaps range
+      if (s < rangeEnd && en > rangeStart) result.push(e);
+      continue;
+    }
+
+    const rule = e.recurrence_rule;
+    const recEnd = e.recurrence_end ? new Date(e.recurrence_end + 'T23:59:59') : new Date(rangeEnd.getTime() + 365 * 86400000);
+    const limit = Math.min(rangeEnd.getTime(), recEnd.getTime());
+    let cur = new Date(s);
+    let count = 0;
+    const maxOccurrences = 500;
+
+    while (cur.getTime() < limit && count < maxOccurrences) {
+      const occEnd = new Date(cur.getTime() + duration);
+      if (occEnd > rangeStart && cur < rangeEnd) {
+        result.push({
+          ...e,
+          start_time: cur.toISOString(),
+          end_time: occEnd.toISOString(),
+          _recurring: true,
+          _originalId: e.id,
+        });
+      }
+      // Advance to next occurrence
+      const prev = new Date(cur);
+      if (rule === 'daily') {
+        cur.setDate(cur.getDate() + 1);
+      } else if (rule === 'weekly') {
+        cur.setDate(cur.getDate() + 7);
+      } else if (rule === 'fortnightly') {
+        cur.setDate(cur.getDate() + 14);
+      } else if (rule === 'monthly') {
+        cur.setMonth(cur.getMonth() + 1);
+      } else if (rule === 'yearly') {
+        cur.setFullYear(cur.getFullYear() + 1);
+      } else {
+        break;
+      }
+      if (cur.getTime() <= prev.getTime()) break; // safety
+      count++;
+    }
+  }
+  return result;
+}
+
 function getEventsForDay(d) {
   const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
 
-  let family = state.familyEvents.filter(e => {
+  const expanded = expandRecurringEvents(state.familyEvents, dayStart, dayEnd);
+  let family = expanded.filter(e => {
     const s = new Date(e.start_time);
     const en = new Date(e.end_time);
     return s < dayEnd && en > dayStart;
@@ -1835,6 +1912,11 @@ function isAllDayEvent(e) {
   return (s.getHours() === 0 && s.getMinutes() === 0 && en.getHours() === 0 && en.getMinutes() === 0);
 }
 
+function toggleRecurrenceEnd() {
+  const val = document.getElementById('eventRecurrence').value;
+  document.getElementById('recurrenceEndGroup').style.display = val ? '' : 'none';
+}
+
 function toggleAllDay() {
   const checked = document.getElementById('eventAllDay').checked;
   document.getElementById('timeRow').style.display = checked ? 'none' : '';
@@ -1871,6 +1953,9 @@ function openNewEventModal(dayStr, hour) {
   document.getElementById('eventAllDay').checked = false;
   document.getElementById('timeRow').style.display = '';
   document.getElementById('dateRow').style.display = 'none';
+  document.getElementById('eventRecurrence').value = '';
+  document.getElementById('eventRecurrenceEnd').value = '';
+  document.getElementById('recurrenceEndGroup').style.display = 'none';
   state.selectedColor = EVENT_COLORS[0];
   renderColorPicker();
 
@@ -1923,8 +2008,19 @@ function editEvent(id) {
     document.getElementById('eventEndDate').value = dateStr(endShow.getTime() < sDate.getTime() ? sDate : endShow);
   }
 
+  // Recurrence
+  const srcEvt = evt._originalId ? state.familyEvents.find(e => e.id === evt._originalId) : evt;
+  document.getElementById('eventRecurrence').value = (srcEvt || evt).recurrence_rule || '';
+  document.getElementById('eventRecurrenceEnd').value = (srcEvt || evt).recurrence_end || '';
+  document.getElementById('recurrenceEndGroup').style.display = (srcEvt || evt).recurrence_rule ? '' : 'none';
+
   state.selectedColor = evt.color || EVENT_COLORS[0];
   renderColorPicker();
+
+  // For recurring virtual occurrences, edit the original
+  if (evt._originalId) {
+    state.editingEvent = srcEvt || evt;
+  }
 
   document.getElementById('eventModal').classList.add('open');
 }
@@ -1964,6 +2060,9 @@ async function saveEvent() {
 
   localStorage.setItem('fc_creator', creator);
 
+  const recRule = document.getElementById('eventRecurrence').value || null;
+  const recEnd = document.getElementById('eventRecurrenceEnd').value || null;
+
   const payload = {
     title,
     start_time: startISO,
@@ -1971,6 +2070,8 @@ async function saveEvent() {
     color: state.selectedColor,
     description: desc,
     created_by: creator,
+    recurrence_rule: recRule,
+    recurrence_end: recEnd,
   };
 
   if (state.editingEvent) {
@@ -2053,13 +2154,14 @@ function renderUpcoming() {
 
   const allEvents = [];
 
-  for (const e of state.familyEvents) {
+  const expanded = expandRecurringEvents(state.familyEvents, today, endRange);
+  for (const e of expanded) {
     const s = new Date(e.start_time);
     if (s >= today && s < endRange) {
       const creator = (e.created_by || '').toLowerCase();
       if (creator === 'david' && !state.filterDavid) continue;
       if (creator === 'roselle' && !state.filterRoselle) continue;
-      allEvents.push({ title: e.title, start: s, end: new Date(e.end_time), color: e.color || '#4A90D9', creator: e.created_by, isBusy: false, id: e.id });
+      allEvents.push({ title: e.title, start: s, end: new Date(e.end_time), color: e.color || '#4A90D9', creator: e.created_by, isBusy: false, id: e._originalId || e.id, recurrence_rule: e.recurrence_rule });
     }
   }
 
@@ -2122,7 +2224,7 @@ function renderUpcoming() {
       html += `<div class="upcoming-item" style="cursor:pointer" onclick="editEvent('${e.id}')">
         <div class="upcoming-color-dot" style="background:${e.color}"></div>
         <div class="upcoming-item-content">
-          <div class="upcoming-item-title">${esc(e.title)}</div>
+          <div class="upcoming-item-title">${e.recurrence_rule ? '&#x21BB; ' : ''}${esc(e.title)}</div>
           <div class="upcoming-item-time">${timeStr}</div>
           ${e.creator ? `<div class="upcoming-item-creator">${esc(e.creator)}</div>` : ''}
         </div>
