@@ -878,12 +878,12 @@ input:focus, select:focus, textarea:focus {
 const SUPABASE_URL = '__SUPABASE_URL__';
 const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
 
-let supabase = null;
+let sb = null;
 let currentUser = null;
 
 // Initialize Supabase client
 if (SUPABASE_URL !== '__SUPABASE_URL__' && SUPABASE_ANON_KEY !== '__SUPABASE_ANON_KEY__') {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 /* ================================================================
@@ -912,13 +912,13 @@ let refreshTimer = null;
    INIT
    ================================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!supabase) {
+  if (!sb) {
     toast('Supabase not configured. Check placeholders.');
     return;
   }
 
   // Check auth state
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
     showApp();
@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Listen for auth changes
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
     if (session) {
       currentUser = session.user;
       showApp();
@@ -994,7 +994,7 @@ async function sendMagicLink() {
   msgEl.style.display = 'block';
 
   try {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await sb.auth.signInWithOtp({ email });
     if (error) throw error;
     msgEl.textContent = 'Check your email for a login link!';
     document.getElementById('loginEmail').value = '';
@@ -1016,7 +1016,7 @@ async function signInWithPassword() {
   msgEl.style.display = 'block';
 
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     document.getElementById('loginEmailPwd').value = '';
     document.getElementById('loginPassword').value = '';
@@ -1027,7 +1027,7 @@ async function signInWithPassword() {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser = null;
   closeSettings();
   showLogin();
@@ -1099,9 +1099,9 @@ function scheduleRefresh() {
 
 /* ----- Supabase Family Events ----- */
 async function fetchFamilyEvents() {
-  if (!supabase) return;
+  if (!sb) return;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('events')
       .select('*')
       .order('start_time', { ascending: true });
@@ -1114,7 +1114,7 @@ async function fetchFamilyEvents() {
 }
 
 async function supabaseUpsert(evt) {
-  if (!supabase) { toast('Supabase not configured'); return null; }
+  if (!sb) { toast('Supabase not configured'); return null; }
 
   const isNew = !evt.id;
   const body = {
@@ -1129,11 +1129,11 @@ async function supabaseUpsert(evt) {
   try {
     let result;
     if (isNew) {
-      const { data, error } = await supabase.from('events').insert([body]).select();
+      const { data, error } = await sb.from('events').insert([body]).select();
       if (error) throw error;
       result = data[0];
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('events')
         .update(body)
         .eq('id', evt.id)
@@ -1150,9 +1150,9 @@ async function supabaseUpsert(evt) {
 }
 
 async function supabaseDelete(id) {
-  if (!supabase) return;
+  if (!sb) return;
   try {
-    const { error } = await supabase.from('events').delete().eq('id', id);
+    const { error } = await sb.from('events').delete().eq('id', id);
     if (error) throw error;
   } catch(e) {
     console.error('Supabase delete error:', e);
