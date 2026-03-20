@@ -624,6 +624,48 @@ input:focus, select:focus, textarea:focus {
   font-weight: 500;
 }
 
+/* All-day events banner row in week view */
+.week-allday-row {
+  display: contents;
+}
+.week-allday-spacer {
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  padding: 4px 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.week-allday-cell {
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  padding: 3px 2px;
+  min-height: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.allday-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.allday-chip.busy {
+  background: var(--busy-bg);
+  color: var(--busy);
+  font-style: italic;
+}
+
 .now-line {
   position: absolute;
   left: 0; right: 0;
@@ -1058,7 +1100,13 @@ input:focus, select:focus, textarea:focus {
         <label class="form-label">Title</label>
         <input type="text" id="eventTitle" placeholder="Family dinner, Soccer practice..." autofocus>
       </div>
-      <div class="form-row">
+      <div class="form-group">
+        <label class="filter-check" style="font-size:14px;">
+          <input type="checkbox" id="eventAllDay" onchange="toggleAllDay()">
+          All day
+        </label>
+      </div>
+      <div class="form-row" id="timeRow">
         <div class="form-group">
           <label class="form-label">Start</label>
           <input type="datetime-local" id="eventStart">
@@ -1066,6 +1114,16 @@ input:focus, select:focus, textarea:focus {
         <div class="form-group">
           <label class="form-label">End</label>
           <input type="datetime-local" id="eventEnd">
+        </div>
+      </div>
+      <div class="form-row" id="dateRow" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input type="date" id="eventStartDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input type="date" id="eventEndDate">
         </div>
       </div>
       <div class="form-group">
@@ -1534,15 +1592,25 @@ function renderMonth(container) {
     const maxShow = 3;
     for (let j = 0; j < Math.min(evts.length, maxShow); j++) {
       const e = evts[j];
+      const allDay = isAllDayEvent(e);
       if (e.isBusy) {
         const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
-        const t = formatTime(e.start) + '–' + formatTime(e.end);
-        html += `<div class="event-chip busy">${t} ${ownerLabel} Busy</div>`;
+        if (allDay) {
+          html += `<div class="event-chip busy">${ownerLabel} Busy</div>`;
+        } else {
+          const t = formatTime(e.start) + '–' + formatTime(e.end);
+          html += `<div class="event-chip busy">${t} ${ownerLabel} Busy</div>`;
+        }
       } else {
-        const t = formatTime(new Date(e.start_time));
         const who = e.created_by ? ' · ' + esc(e.created_by) : '';
-        html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
-                  onclick="editEvent('${e.id}')">${t} ${esc(e.title)}${who}</div>`;
+        if (allDay) {
+          html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
+                    onclick="editEvent('${e.id}')">${esc(e.title)}${who}</div>`;
+        } else {
+          const t = formatTime(new Date(e.start_time));
+          html += `<div class="event-chip" style="background:${e.color || '#4A90D9'}"
+                    onclick="editEvent('${e.id}')">${t} ${esc(e.title)}${who}</div>`;
+        }
       }
     }
     if (evts.length > maxShow) {
@@ -1576,6 +1644,24 @@ function renderWeek(container) {
       ${dayName}<span class="day-num">${d.getDate()}</span></div>`;
   }
 
+  // All-day row
+  html += '<div class="week-allday-spacer">All day</div>';
+  for (const d of days) {
+    const evts = getEventsForDay(d).filter(e => isAllDayEvent(e));
+    html += '<div class="week-allday-cell">';
+    for (const e of evts) {
+      if (e.isBusy) {
+        const ownerLabel = e.owner === 'roselle' ? 'R' : 'D';
+        html += `<div class="allday-chip busy">${ownerLabel} Busy</div>`;
+      } else {
+        const who = e.created_by ? ' · ' + esc(e.created_by) : '';
+        html += `<div class="allday-chip" style="background:${e.color || '#4A90D9'}"
+                  onclick="editEvent('${e.id}')">${esc(e.title)}${who}</div>`;
+      }
+    }
+    html += '</div>';
+  }
+
   for (let h = 6; h <= 22; h++) {
     const label = h === 0 ? '12 AM' : h < 12 ? h + ' AM' : h === 12 ? '12 PM' : (h - 12) + ' PM';
     html += `<div class="time-label">${label}</div>`;
@@ -1592,7 +1678,7 @@ function renderWeek(container) {
 
   const grid = document.getElementById('weekGrid');
   for (const d of days) {
-    const evts = getEventsForDay(d);
+    const evts = getEventsForDay(d).filter(e => !isAllDayEvent(e));
     for (const e of evts) {
       const start = e.isBusy ? e.start : new Date(e.start_time);
       const end = e.isBusy ? e.end : new Date(e.end_time);
@@ -1727,6 +1813,31 @@ function esc(s) {
   return d.innerHTML;
 }
 
+function isAllDayEvent(e) {
+  if (e.isBusy) {
+    const s = e.start, en = e.end;
+    return (s.getHours() === 0 && s.getMinutes() === 0 && en.getHours() === 0 && en.getMinutes() === 0 && en > s);
+  }
+  const s = new Date(e.start_time), en = new Date(e.end_time);
+  const durationH = (en - s) / (1000 * 60 * 60);
+  if (durationH >= 23) return true;
+  return (s.getHours() === 0 && s.getMinutes() === 0 && en.getHours() === 0 && en.getMinutes() === 0);
+}
+
+function toggleAllDay() {
+  const checked = document.getElementById('eventAllDay').checked;
+  document.getElementById('timeRow').style.display = checked ? 'none' : '';
+  document.getElementById('dateRow').style.display = checked ? '' : 'none';
+
+  if (checked) {
+    // Copy current date values to date inputs
+    const startVal = document.getElementById('eventStart').value;
+    const endVal = document.getElementById('eventEnd').value;
+    if (startVal) document.getElementById('eventStartDate').value = startVal.split('T')[0];
+    if (endVal) document.getElementById('eventEndDate').value = endVal.split('T')[0];
+  }
+}
+
 /* ================================================================
    EVENT MODAL
    ================================================================ */
@@ -1743,7 +1854,12 @@ function openNewEventModal(dayStr, hour) {
   document.getElementById('eventTitle').value = '';
   document.getElementById('eventStart').value = dayStr + 'T' + hStr + ':' + min;
   document.getElementById('eventEnd').value = dayStr + 'T' + endH + ':' + min;
+  document.getElementById('eventStartDate').value = dayStr;
+  document.getElementById('eventEndDate').value = dayStr;
   document.getElementById('eventDesc').value = '';
+  document.getElementById('eventAllDay').checked = false;
+  document.getElementById('timeRow').style.display = '';
+  document.getElementById('dateRow').style.display = 'none';
   state.selectedColor = EVENT_COLORS[0];
   renderColorPicker();
 
@@ -1777,10 +1893,25 @@ function editEvent(id) {
   document.getElementById('btnSave').textContent = 'Update Event';
 
   document.getElementById('eventTitle').value = evt.title;
-  document.getElementById('eventStart').value = toLocalInput(new Date(evt.start_time));
-  document.getElementById('eventEnd').value = toLocalInput(new Date(evt.end_time));
+  const sDate = new Date(evt.start_time);
+  const eDate = new Date(evt.end_time);
+  document.getElementById('eventStart').value = toLocalInput(sDate);
+  document.getElementById('eventEnd').value = toLocalInput(eDate);
   document.getElementById('eventDesc').value = evt.description || '';
   document.getElementById('eventCreator').value = evt.created_by || 'David';
+
+  const allDay = isAllDayEvent(evt);
+  document.getElementById('eventAllDay').checked = allDay;
+  document.getElementById('timeRow').style.display = allDay ? 'none' : '';
+  document.getElementById('dateRow').style.display = allDay ? '' : 'none';
+  if (allDay) {
+    document.getElementById('eventStartDate').value = dateStr(sDate);
+    // For all-day, end date is exclusive in storage, so show the day before
+    const endShow = new Date(eDate);
+    endShow.setDate(endShow.getDate() - 1);
+    document.getElementById('eventEndDate').value = dateStr(endShow.getTime() < sDate.getTime() ? sDate : endShow);
+  }
+
   state.selectedColor = evt.color || EVENT_COLORS[0];
   renderColorPicker();
 
@@ -1794,21 +1925,38 @@ function closeEventModal() {
 
 async function saveEvent() {
   const title = document.getElementById('eventTitle').value.trim();
-  const startVal = document.getElementById('eventStart').value;
-  const endVal = document.getElementById('eventEnd').value;
+  const isAllDay = document.getElementById('eventAllDay').checked;
   const desc = document.getElementById('eventDesc').value.trim();
   const creator = document.getElementById('eventCreator').value;
 
   if (!title) { toast('Please enter a title'); return; }
-  if (!startVal || !endVal) { toast('Please set start and end times'); return; }
-  if (new Date(endVal) <= new Date(startVal)) { toast('End must be after start'); return; }
+
+  let startISO, endISO;
+  if (isAllDay) {
+    const sd = document.getElementById('eventStartDate').value;
+    const ed = document.getElementById('eventEndDate').value;
+    if (!sd || !ed) { toast('Please set start and end dates'); return; }
+    if (ed < sd) { toast('End date must be on or after start date'); return; }
+    startISO = new Date(sd + 'T00:00:00').toISOString();
+    // End date is exclusive (next day midnight) for proper all-day range
+    const endD = new Date(ed + 'T00:00:00');
+    endD.setDate(endD.getDate() + 1);
+    endISO = endD.toISOString();
+  } else {
+    const startVal = document.getElementById('eventStart').value;
+    const endVal = document.getElementById('eventEnd').value;
+    if (!startVal || !endVal) { toast('Please set start and end times'); return; }
+    if (new Date(endVal) <= new Date(startVal)) { toast('End must be after start'); return; }
+    startISO = new Date(startVal).toISOString();
+    endISO = new Date(endVal).toISOString();
+  }
 
   localStorage.setItem('fc_creator', creator);
 
   const payload = {
     title,
-    start_time: new Date(startVal).toISOString(),
-    end_time: new Date(endVal).toISOString(),
+    start_time: startISO,
+    end_time: endISO,
     color: state.selectedColor,
     description: desc,
     created_by: creator,
@@ -2028,6 +2176,7 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('pinScreen').style.display !== 'none') {
     if (e.key >= '0' && e.key <= '9') pinPress(e.key);
     if (e.key === 'Backspace') pinBackspace();
+    if (e.key === 'Enter') checkPin();
     return;
   }
   if (document.getElementById('eventModal').classList.contains('open')) {
